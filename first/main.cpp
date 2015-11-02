@@ -31,7 +31,10 @@ int find(char* pathToFile, char* textToFind)
 			}
 			char* buffer = (char*)malloc(buf_len + 1); //creating of the array of chars to keep characters with BUFFER_LENTH value
 			char* firstAppear; //pointer for strstr function
+			bool is_found = false; //flag for result of program
 			int bytes_read = 0;
+			int line_number = 0;
+			char* tempPos;
 			do
 			{
 				memset(buffer, '\0', buf_len);
@@ -40,31 +43,66 @@ int find(char* pathToFile, char* textToFind)
 				firstAppear = strstr(buffer, textToFind);
 				if (firstAppear)
 				{
+					is_found = true;
+
 					int front = firstAppear - buffer;
+
+					for (int i = 0; i <= front; i++)
+					{
+						if (buffer[i] == '\n')
+						{
+							line_number++;
+						}
+					}
+					//make line_number variabe "readable" for user(if phrase will be found at 1 row)
+					int line_number_show = line_number++;
+
 					front = front < 10 ? front : 10;
 					int back = (buffer + buf_len) - (firstAppear + strlen(textToFind));
 					back = back < 10 ? back : 10;
-
 					char* dif = firstAppear - front;
-					printf("**** Found! **** \n");
+										
+					printf("**** Found at %d row **** \n", line_number_show);
 					fwrite(dif, sizeof(char), (front + back + strlen(textToFind)), stdout);
 					printf("\n");
-													
+
+					fseek(file, (0 - strlen(textToFind)), SEEK_CUR);
+
+					tempPos = firstAppear - strlen(textToFind);
+					for (int i = 0; i <= strlen(textToFind); i++)
+					{
+						if (buffer[i] == '\n')
+						{
+							line_number--;
+						}
+					}
 				}
-				fseek(file, (0 - strlen(textToFind)), SEEK_CUR);
+				else
+				{
+					tempPos = firstAppear - strlen(textToFind);
+					for (int i = 0; i <= (tempPos - buffer); i++)
+					{
+						if (buffer[i] == '\n')
+						{
+							line_number--;
+						}
+					}
+					fseek(file, (0 - strlen(textToFind)), SEEK_CUR);
+				}
+			
+
 			} while (bytes_read == buf_len);
 
-			free(buffer);
-			fclose(file);
-			system("pause");
-
-			if (!firstAppear)
+			if (is_found != true)
 			{
 				printf("**** Wasn't found! **** \n");
 				free(buffer);
 				system("pause");
 				return 1;
 			}
+			free(buffer);
+			fclose(file);
+			system("pause");
 			return 0;
 		}
 	}
