@@ -4,6 +4,21 @@
 
 static const int DEFAULT_BUFFER_LENGHT = 1000;
 
+int count_lines(char* arr, char n, int value);
+
+int count_lines(char* arr, char n, int value)
+{
+	int count = 1; //readable format
+	for (int i = 0; i <= value; i++)
+	{
+		if (arr[i] == n)
+		{
+			count++;
+		}
+	}
+	return count;
+}
+
 int find(char* pathToFile, char* textToFind)
 {
 	FILE* file;
@@ -24,79 +39,65 @@ int find(char* pathToFile, char* textToFind)
 		}
 		else
 		{
-			int buf_len = 2 * strlen(textToFind);
-			if (buf_len < DEFAULT_BUFFER_LENGHT)
+			int bufferLenth = 2 * strlen(textToFind);
+			if (bufferLenth < DEFAULT_BUFFER_LENGHT)
 			{
-				buf_len = DEFAULT_BUFFER_LENGHT;
+				bufferLenth = DEFAULT_BUFFER_LENGHT;
 			}
-			char* buffer = (char*)malloc(buf_len + 1); //creating of the array of chars to keep characters with BUFFER_LENTH value
-			char* firstAppear; //pointer for strstr function
-			bool is_found = false; //flag for result of program
-			int bytes_read = 0;
-			int line_number = 0;
-			char* tempPos;
+			char* buffer = (char*)malloc(bufferLenth + 1);
+			char* firstAppear;
+			int bytesRead;
+			int lineNumber = 0;
+			bool isFound = false;
+			int offset = 0;
 			do
 			{
-				memset(buffer, '\0', buf_len);
-				bytes_read = fread(buffer, sizeof(char), buf_len , file);
-				buffer[bytes_read] = '\0';
+				memset(buffer, '\0', bufferLenth + 1);
+				bytesRead = fread(buffer, sizeof(char), bufferLenth, file);
 				firstAppear = strstr(buffer, textToFind);
 				if (firstAppear)
 				{
-					is_found = true;
-
+					isFound = true;
 					int front = firstAppear - buffer;
-
-					for (int i = 0; i <= front; i++)
-					{
-						if (buffer[i] == '\n')
-						{
-							line_number++;
-						}
-					}
-					//make line_number variabe "readable" for user(if phrase will be found at 1 row)
-					int line_number_show = line_number++;
-
+					int back = (buffer + bufferLenth) - (firstAppear + strlen(textToFind));
 					front = front < 10 ? front : 10;
-					int back = (buffer + buf_len) - (firstAppear + strlen(textToFind));
 					back = back < 10 ? back : 10;
 					char* dif = firstAppear - front;
-										
-					printf("**** Found at %d row **** \n", line_number_show);
-					fwrite(dif, sizeof(char), (front + back + strlen(textToFind)), stdout);
-					printf("\n");
-
-					fseek(file, (0 - strlen(textToFind)), SEEK_CUR);
-
-					tempPos = firstAppear - strlen(textToFind);
-					for (int i = 0; i <= strlen(textToFind); i++)
+					for (int i = 0; i <= (firstAppear - buffer); i++)
 					{
 						if (buffer[i] == '\n')
 						{
-							line_number--;
+							lineNumber++;
 						}
 					}
+					printf("###FOUND AT %d row###\n", lineNumber + 1);
+					fwrite(dif, sizeof(char), (front + strlen(textToFind) + back), stdout);
+					printf("\n");
+				
+					offset = 0 - ((buffer + bufferLenth) - (firstAppear + strlen(textToFind)));
+					fseek(file, offset, SEEK_CUR);
 				}
 				else
 				{
-					tempPos = firstAppear - strlen(textToFind);
-					for (int i = 0; i <= (tempPos - buffer); i++)
+					for (int i = 0; i <= bufferLenth; i++)
 					{
 						if (buffer[i] == '\n')
 						{
-							line_number--;
+							lineNumber++;
 						}
 					}
-					fseek(file, (0 - strlen(textToFind)), SEEK_CUR);
+					offset = 0 - strlen(textToFind);
+					fseek(file, offset, SEEK_CUR);
 				}
+				
+	
+			} while (bytesRead == bufferLenth);
 			
-
-			} while (bytes_read == buf_len);
-
-			if (is_found != true)
+			if (isFound != true)
 			{
 				printf("**** Wasn't found! **** \n");
 				free(buffer);
+				fclose(file);
 				system("pause");
 				return 1;
 			}
@@ -111,11 +112,11 @@ int find(char* pathToFile, char* textToFind)
 
 int main(int argc, char** argv)
 {
-    if (argc < 3)
-    {
+	if (argc < 3)
+	{
 		printf("You need specify more args for app \nExample: first.exe your_file \"Text to find\"\n");
 		system("pause");
-        return 1;
-    }
-    return find(argv[1], argv[2]);
+		return 1;
+	}
+	return find(argv[1], argv[2]);
 }
